@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cocina Hotel Arima</title>
+<style>
+:root { --bg:#0a0a0a; --card:#161616; --accent:#00f2ea; --text:#f5f5f5; --border:#2a2a2a; }
+* { box-sizing:border-box; }
+body { font-family: system-ui, sans-serif; background:var(--bg); color:var(--text); margin:0; padding:16px; max-width:900px; margin:0 auto; line-height:1.45; }
+header { text-align:center; padding:20px; background:#111; border-radius:16px; margin-bottom:16px; }
+h1 { margin:0; }
+.tabs { display:flex; gap:6px; flex-wrap:wrap; margin:12px 0; }
+.tab { padding:8px 14px; background:#222; border-radius:20px; cursor:pointer; font-size:14px; }
+.tab.active { background:var(--accent); color:#000; font-weight:bold; }
+.card { background:var(--card); border-radius:14px; padding:14px; margin-bottom:12px; border:1px solid var(--border); }
+.recipe { background:#1e1e1e; border-radius:10px; padding:12px; margin:8px 0; cursor:pointer; }
+.recipe h3 { margin:0; color:var(--accent); font-size:1em; }
+.modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.92); z-index:1000; overflow:auto; }
+.modal-content { background:#161616; margin:16px auto; padding:20px; border-radius:14px; max-width:680px; }
+.close { float:right; font-size:24px; cursor:pointer; }
+.section-title { color:var(--accent); margin:14px 0 6px; font-size:1.05em; }
+.critical { color:#ff6b6b; font-weight:600; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Cocina Hotel Arima</h1>
+  <p>Misura · Tilia · Desayunos · Eventos</p>
+</header>
+
+<div class="tabs" id="tabs"></div>
+<div id="content"></div>
+
+<div id="modal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal()">&times;</span>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+const sections = {
+  misura: [
+    {name: "Jamón ibérico Arturo Sánchez", base: 1, ingredients: [{name:"Jamón ibérico", qty:70, unit:"g"}], process: "Templar 45-60 min a 20-22°C. Lonchear fino en una sola capa. No apilar.", critical: "Si está frío, la grasa no funde en boca.", allergens: "Ninguno"},
+    {name: "Croqueta cremosa de bacalao con pil-pil", base: 1, ingredients: [{name:"Croqueta", qty:3, unit:"ud"}, {name:"Pil-pil", qty:20, unit:"g"}], process: "Fritura a 175°C. Pil-pil de ajo asado a 40-45°C. Servir inmediatamente.", critical: "No hervir el pil-pil. Masa blanda se rompe.", allergens: "Gluten, Lactosa, Pescado, Huevo"},
+    {name: "Rodaballo salvaje a la brasa con escabeche de setas", base: 1, ingredients: [{name:"Rodaballo", qty:150, unit:"g"}, {name:"Escabeche setas", qty:40, unit:"g"}], process: "Marcar a la brasa. Escabeche de setas de temporada. Terminar con aceite de ajo.", critical: "Producto salvaje. No sobrecocinar.", allergens: "Pescado"},
+    {name: "Presa ibérica glaseada", base: 1, ingredients: [{name:"Presa", qty:150, unit:"g"}, {name:"Glaseado", qty:15, unit:"g"}], process: "Sellar y glasear. Acompañar con cebolleta asada y encurtidos.", critical: "Controlar el glaseado. No quemar.", allergens: "Ninguno"},
+    {name: "Chuletón a la brasa con sarmiento", base: 1, ingredients: [{name:"Chuletón", qty:380, unit:"g"}], process: "Brasa. Sarmiento solo al final (1-2 min). Reposar 3-4 min.", critical: "Llama visible es suciedad.", allergens: "Ninguno"}
+  ],
+
+  desayunos: [
+    {name: "Tarta tres leches con leche de coco", base: 1, ingredients: [{name:"Porción", qty:1, unit:"ud"}], process: "Bizcocho + baño de tres leches de coco. Reposo mínimo 4h.", critical: "Leches frías. No calentar.", allergens: "Gluten, Lactosa, Huevo"},
+    {name: "Tarta de chocolate clásica", base: 1, ingredients: [{name:"Porción", qty:1, unit:"ud"}], process: "Base de galleta + ganache + 3 huevos. Horno 170°C.", critical: "Centro ligeramente tembloroso.", allergens: "Gluten, Lactosa, Huevo"}
+  ],
+  eventos: [
+    {name: "Higos con mascarpone y helado de pistacho", base: 1, ingredients: [{name:"Crema mascarpone", qty:40, unit:"g"}, {name:"Higos", qty:1, unit:"ud"}], process: "Quenelle de helado + crema de mascarpone + higos + pistacho garrapiñado.", critical: "Montaje rápido. Plato congelado.", allergens: "Lactosa, Frutos secos"},
+    {name: "Salsa mole oscuro", base: 1, ingredients: [{name:"Mole", qty:50, unit:"g"}], process: "Mole de chiles, frutos secos y chocolate. Reposo 12-24h.", critical: "Tostar chiles sin quemar. Colar bien.", allergens: "Frutos secos, Cacahuete, Sésamo"}
+  ]
+
+  tilia: [
+    {name: "Gilda Yurrita con pan de hierbas", base: 1, ingredients: [{name:"Gilda", qty:1, unit:"ud"}], process: "Montar anchoa, piparra y aceituna. Servir con pan de hierbas seco.", critical: "Escurrir bien todos los elementos.", allergens: "Pescado, Gluten"},
+    {name: "Croqueta cremosa de cecina de León", base: 1, ingredients: [{name:"Croqueta", qty:2, unit:"ud"}], process: "Fritura 175°C hasta dorado uniforme. Interior cremoso.", critical: "Si se abren, revisar aceite y tanda.", allergens: "Gluten, Lactosa, Huevo"},
+    {name: "Hamburguesa de vaca con setas y brie", base: 1, ingredients: [{name:"Carne", qty:160, unit:"g"}, {name:"Brie", qty:30, unit:"g"}], process: "Cocción completa (70°C / 2 min en centro). Fundir el brie.", critical: "Temperatura interna obligatoria.", allergens: "Gluten, Lactosa"}
+  ]
+};
+
+const tabNames = ["misura","tilia","desayunos","eventos","equipo","mensajes","tareas","avisos","estaciones","pase"];
+let current = "misura";
+
+function initTabs() {
+  const tabs = document.getElementById("tabs");
+  tabNames.forEach(name => {
+    const d = document.createElement("div");
+    d.className = "tab" + (name === current ? " active" : "");
+    d.textContent = name.charAt(0).toUpperCase() + name.slice(1);
+    d.onclick = () => showSection(name);
+    tabs.appendChild(d);
+  });
+}
+
+function showSection(name) {
+  current = name;
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  event.target.classList.add("active");
+  render();
+}
+
+function render() {
+  if (["equipo","mensajes","tareas","avisos","estaciones","pase","desayunos","eventos"].includes(current)) {
+    document.getElementById("content").innerHTML = `<div class="card"><h2>${current.toUpperCase()}</h2><p>Sección lista. Contenido en desarrollo.</p></div>`;
+    return;
+  }
+  const list = sections[current] || [];
+  document.getElementById("content").innerHTML = `<div class="card"><h2>${current.toUpperCase()}</h2>` +
+    list.map(r => `<div class="recipe" onclick="openRecipe('${r.name}')"><h3>${r.name}</h3></div>`).join("") +
+    `</div>`;
+}
+
+function openRecipe(name) {
+  let r = null;
+  for (let s in sections) {
+    const f = sections[s].find(x => x.name === name);
+    if (f) r = f;
+  }
+  if (!r) return;
+  document.getElementById("modal-body").innerHTML = `
+    <h2>${r.name}</h2>
+    <div class="section-title">Alérgenos</div>
+    <p>${r.allergens}</p>
+    <div class="section-title">Elaboración</div>
+    <p>${r.process}</p>
+    <p class="critical">Punto crítico: ${r.critical}</p>
+    <div class="section-title">Escalado</div>
+    <label>Comensales: <input type="number" id="covers" value="4" min="1" style="width:60px; background:#222; color:#fff; border:1px solid #333; padding:6px; border-radius:6px;"></label>
+    <button onclick="scaleRecipe('${r.name}')" style="background:#00f2ea; color:#000; border:none; padding:6px 12px; border-radius:6px; margin-left:8px; font-weight:600;">Escalar</button>
+    <div id="scaled" style="margin-top:10px;"></div>
+  `;
+  document.getElementById("modal").style.display = "block";
+}
+
+function scaleRecipe(name) {
+  let r = null;
+  for (let s in sections) {
+    const f = sections[s].find(x => x.name === name);
+    if (f) r = f;
+  }
+  const covers = parseInt(document.getElementById("covers").value) || 1;
+  let html = `<strong>Para ${covers} comensales:</strong><ul>`;
+  r.ingredients.forEach(ing => {
+    const total = (ing.qty * covers / r.base).toFixed(1);
+    html += `<li>${ing.name}: ${total} ${ing.unit}</li>`;
+  });
+  html += "</ul>";
+  document.getElementById("scaled").innerHTML = html;
+}
+
+function closeModal() { document.getElementById("modal").style.display = "none"; }
+
+initTabs();
+render();
+window.onclick = e => { if (e.target.id === "modal") closeModal(); };
+</script>
+</body>
+</html>
