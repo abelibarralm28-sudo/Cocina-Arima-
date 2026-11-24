@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cocina Hotel Arima</title>
+<style>
+body { font-family: system-ui, sans-serif; background:#0a0a0a; color:#f5f5f5; margin:0; padding:16px; max-width:850px; margin:0 auto; line-height:1.45; }
+header { text-align:center; padding:20px; background:#111; border-radius:16px; }
+h1 { margin:0; }
+.tabs { display:flex; gap:6px; flex-wrap:wrap; margin:16px 0; }
+.tab { padding:8px 14px; background:#222; border-radius:20px; cursor:pointer; font-size:14px; }
+.tab.active { background:#00f2ea; color:#000; font-weight:bold; }
+.card { background:#161616; border-radius:14px; padding:16px; margin:12px 0; border:1px solid #2a2a2a; }
+.recipe { background:#1e1e1e; border-radius:10px; padding:12px; margin:8px 0; cursor:pointer; }
+.recipe h3 { margin:0; color:#00f2ea; }
+.modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.92); z-index:1000; overflow:auto; }
+.modal-content { background:#161616; margin:16px auto; padding:20px; border-radius:14px; max-width:680px; }
+.close { float:right; font-size:24px; cursor:pointer; }
+input, button { background:#222; color:#fff; border:1px solid #333; padding:8px; border-radius:8px; }
+button { background:#00f2ea; color:#000; font-weight:bold; cursor:pointer; }
+.critical { color:#ff6b6b; font-weight:600; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Cocina Hotel Arima</h1>
+  <p>Misura · Tilia · Desayunos · Eventos</p>
+</header>
+
+<div class="tabs" id="tabs"></div>
+<div id="content"></div>
+
+<div id="modal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal()">&times;</span>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+const sections = {
+  misura: [
+    {name: "Jamón ibérico Arturo Sánchez", base:1, ingredients:[{name:"Jamón ibérico Arturo Sánchez", qty:70, unit:"g"}], process:"Templar 45-60 min a 20-22°C. Lonchear fino en una sola capa. No apilar.", critical:"Si está frío, la grasa no funde en boca.", allergens:"Ninguno"},
+    {name: "Croqueta cremosa de bacalao con pil-pil", base:1, ingredients:[{name:"Croqueta de bacalao", qty:3, unit:"ud"}, {name:"Pil-pil de ajo asado", qty:20, unit:"g"}], process:"Fritura a 175°C. Pil-pil a 40-45°C. Servir inmediatamente.", critical:"No hervir el pil-pil. Masa blanda se rompe.", allergens:"Gluten, Lactosa, Pescado, Huevo"},
+    {name: "Rodaballo salvaje a la brasa con escabeche de setas", base:1, ingredients:[{name:"Rodaballo salvaje", qty:150, unit:"g"}, {name:"Escabeche de setas", qty:40, unit:"g"}], process:"Marcar a la brasa. Escabeche de setas de temporada. Terminar con aceite de ajo.", critical:"Producto salvaje. No sobrecocinar.", allergens:"Pescado"},
+    {name: "Presa ibérica glaseada", base:1, ingredients:[{name:"Presa ibérica", qty:150, unit:"g"}, {name:"Glaseado", qty:15, unit:"g"}], process:"Sellar y glasear. Acompañar con cebolleta asada y encurtidos.", critical:"Controlar el glaseado. No quemar.", allergens:"Ninguno"},
+    {name: "Chuletón a la brasa con sarmiento", base:1, ingredients:[{name:"Chuletón madurado", qty:380, unit:"g"}], process:"Brasa. Sarmiento solo al final (1-2 min). Reposar 3-4 min.", critical:"Llama visible es suciedad.", allergens:"Ninguno"}
+  ],
+  tilia: [
+    {name: "Gilda Yurrita con pan de hierbas", base:1, ingredients:[{name:"Gilda", qty:1, unit:"ud"}], process:"Montar anchoa, piparra y aceituna. Servir con pan de hierbas seco.", critical:"Escurrir bien todos los elementos.", allergens:"Pescado, Gluten"},
+    {name: "Croqueta cremosa de cecina de León", base:1, ingredients:[{name:"Croqueta de cecina", qty:2, unit:"ud"}], process:"Fritura 175°C hasta dorado uniforme. Interior cremoso.", critical:"Si se abren, revisar aceite y tanda.", allergens:"Gluten, Lactosa, Huevo"},
+    {name: "Hamburguesa de vaca con setas y brie", base:1, ingredients:[{name:"Carne de vaca", qty:160, unit:"g"}, {name:"Brie", qty:30, unit:"g"}], process:"Cocción completa (70°C / 2 min en centro). Fundir el brie.", critical:"Temperatura interna obligatoria.", allergens:"Gluten, Lactosa"}
+  ]
+};
+
+const tabNames = ["misura","tilia","desayunos","eventos","equipo","mensajes","tareas","avisos","estaciones","pase"];
+let current = "misura";
+
+function init() {
+  const tabs = document.getElementById("tabs");
+  tabNames.forEach(name => {
+    const d = document.createElement("div");
+    d.className = "tab" + (name === current ? " active" : "");
+    d.textContent = name.charAt(0).toUpperCase() + name.slice(1);
+    d.onclick = () => show(name);
+    tabs.appendChild(d);
+  });
+  render();
+}
+
+function show(name) {
+  current = name;
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  event.target.classList.add("active");
+  render();
+}
+
+function render() {
+  if (["equipo","mensajes","tareas","avisos","estaciones","pase","desayunos","eventos"].includes(current)) {
+    document.getElementById("content").innerHTML = `<div class="card"><h2>${current.toUpperCase()}</h2><p>Sección activa. Contenido en desarrollo.</p></div>`;
+    return;
+  }
+  const list = sections[current] || [];
+  document.getElementById("content").innerHTML = `<div class="card"><h2>${current.toUpperCase()}</h2>` +
+    list.map(r => `<div class="recipe" onclick="openRecipe('${r.name}')"><h3>${r.name}</h3></div>`).join("") +
+    `</div>`;
+}
+
+function openRecipe(name) {
+  let r = null;
+  for (let s in sections) {
+    const f = sections[s].find(x => x.name === name);
+    if (f) r = f;
+  }
+  if (!r) return;
+  document.getElementById("modal-body").innerHTML = `
+    <h2>${r.name}</h2>
+    <p><strong>Alérgenos:</strong> ${r.allergens}</p>
+    <p><strong>Elaboración:</strong> ${r.process}</p>
+    <p class="critical"><strong>Punto crítico:</strong> ${r.critical}</p>
+    <div style="margin-top:14px;">
+      <label>Comensales: <input type="number" id="covers" value="4" min="1" style="width:60px"></label>
+      <button onclick="scale('${r.name}')">Escalar</button>
+      <div id="scaled" style="margin-top:10px;"></div>
+    </div>
+  `;
+  document.getElementById("modal").style.display = "block";
+}
+
+function scale(name) {
+  let r = null;
+  for (let s in sections) {
+    const f = sections[s].find(x => x.name === name);
+    if (f) r = f;
+  }
+  const covers = parseInt(document.getElementById("covers").value) || 1;
+  let html = `<strong>Para ${covers} comensales:</strong><ul>`;
+  r.ingredients.forEach(ing => {
+    const total = (ing.qty * covers / r.base).toFixed(1);
+    html += `<li>${ing.name}: ${total} ${ing.unit}</li>`;
+  });
+  html += "</ul>";
+  document.getElementById("scaled").innerHTML = html;
+}
+
+function closeModal() { document.getElementById("modal").style.display = "none"; }
+
+init();
+window.onclick = e => { if (e.target.id === "modal") closeModal(); };
+</script>
+</body>
+</html>
